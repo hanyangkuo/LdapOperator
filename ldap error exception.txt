@@ -1,0 +1,3 @@
+[LDAP: error code 17 - xxx: attribute type undefined]
+[LDAP: error code 21 - shadowLastChange: value #0 invalid per syntax]
+[LDAP: error code 64 - value of naming attribute 'cn' is not present in entry]

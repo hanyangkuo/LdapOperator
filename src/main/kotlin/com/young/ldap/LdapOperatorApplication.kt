@@ -1,4 +1,4 @@
-package com.young.ldap.ldapOperator
+package com.young.ldap
 
 import org.springframework.boot.autoconfigure.SpringBootApplication
 import org.springframework.boot.runApplication

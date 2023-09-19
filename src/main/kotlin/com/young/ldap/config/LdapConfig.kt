@@ -1,10 +1,10 @@
-package com.young.ldap.ldapOperator.config
+package com.young.ldap.config
 
 import org.springframework.context.annotation.Configuration
 import org.springframework.data.ldap.repository.config.EnableLdapRepositories
 
 @Configuration
-@EnableLdapRepositories(basePackages = ["com.baeldung.ldap.**"])
+@EnableLdapRepositories(basePackages = ["com.young.ldap.**"])
 class LdapConfig {
 
 }

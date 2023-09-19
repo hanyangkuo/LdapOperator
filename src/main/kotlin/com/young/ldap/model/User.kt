@@ -1,21 +1,25 @@
-package com.young.ldap.ldapOperator.model
+package com.young.ldap.model
 
 import org.springframework.ldap.odm.annotations.Attribute
 import org.springframework.ldap.odm.annotations.Entry
 import org.springframework.ldap.odm.annotations.Id
+import java.util.Date
 import javax.naming.Name
 
 @Entry(base = "ou=users", objectClasses = ["inetOrgPerson","posixAccount","shadowAccount"])
  class User {
     @Id
-    private val dn: Name? = null
-
-    @Attribute(name = "uid")
-    private val uid: String? = null
+    val dn: Name? = null
 
     @Attribute(name = "cn")
-    private val cn: String? = null
+    val username: String? = null
+
+    @Attribute(name = "sn")
+    val surname: String? = null
 
     @Attribute(name = "userPassword")
-    val userPassword: String? = null
+    var userPassword: String? = null
+
+    @Attribute(name = "shadowLastChange")
+    var updateDate: String? = null
 }

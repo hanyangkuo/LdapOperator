@@ -14,25 +14,23 @@ import java.sql.Time
 class UserRepositoryTest {
 
     @Autowired
-    private val userRepository: UserRepository?= null
+    private lateinit var userRepository: UserRepository
 
     @Test
     fun testFindByUsername(){
-        var user = userRepository!!.findByUsername("user01")
-        if( user != null ){
-//            user.userPassword = "Test"
+        var user = userRepository.findByUsername("user01")
+        //            user.userPassword = "Test"
+        if (user != null ){
             println("${user.dn}")
             println("${user.username}")
-            user.updateDate = "123"
             userRepository.save(user)
         }
-        user = userRepository!!.findByUsername("user01")
+        user = userRepository.findByUsername("user01")
         if( user != null ){
             println("${user.dn}")
             println("${user.username}")
             println("${user.surname}")
             println("${user.userPassword}")
-            println("${user.updateDate}")
         }
     }
 }

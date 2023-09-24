@@ -5,6 +5,4 @@ import org.springframework.data.ldap.repository.config.EnableLdapRepositories
 
 @Configuration
 @EnableLdapRepositories(basePackages = ["com.young.ldap.**"])
-class LdapConfig {
-
-}
+class LdapConfig

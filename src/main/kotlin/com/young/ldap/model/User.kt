@@ -19,7 +19,4 @@ import javax.naming.Name
 
     @Attribute(name = "userPassword")
     var userPassword: String? = null
-
-    @Attribute(name = "shadowLastChange")
-    var updateDate: String? = null
 }

@@ -1,0 +1,7 @@
+# cat adam.ldif
+dn: uid=adam,ou=users,dc=example,dc=com
+objectClass: top
+objectClass: inetOrgPerson
+cn: adam
+sn: adam
+uid: adam

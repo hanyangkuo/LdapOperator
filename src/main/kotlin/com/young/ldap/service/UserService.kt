@@ -1,17 +1,20 @@
 package com.young.ldap.service
 
 import com.young.ldap.repository.UserRepository
+import com.young.ldap.util.LdifManager
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ClassPathResource
 import org.springframework.ldap.core.LdapTemplate
-import org.springframework.ldap.ldif.parser.LdifParser
+import org.springframework.ldap.ldif.support.DefaultAttributeValidationPolicy
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
-import javax.naming.ldap.LdapName
+import java.util.logging.Logger
 
 
 @Service
 class UserService {
+
+    private var logger = Logger.getLogger(UserService::javaClass.name)
 
     @Autowired
     private lateinit var userRepository: UserRepository
@@ -26,26 +29,17 @@ class UserService {
         return Mono.empty()
     }
 
-    fun createLdif() {
-        val parser = LdifParser(ClassPathResource("user01.ldif"))
+    fun readLdif() {
+        val parser = LdifManager(ClassPathResource("user01.ldif"))
         parser.open()
         while (parser.hasMoreRecords()) {
             val record = parser.record
-            val dn: LdapName = record.name
-            println(record)
-            println(dn)
-            ldapTemplate.modifyAttributes(dn, record.all)
+//            val dn: LdapName = record.name
+            logger.info("record: $record")
+            logger.info("get record attribute: ${record?.get("objectclass")}")
         }
+//        val attribute = DefaultAttributeValidationPolicy().parse(StringBuilder("changetype: add").toString())
+//        logger.attribute.id
 
-        val ldifParser: LdifParser = LdifParser()
-        val ldifEntries: List<String> = ldifParser.   .parse(ldifString.toString())
-
-        // Iterate over parsed LDIF entries
-
-        // Iterate over parsed LDIF entries
-        for (entry in ldifEntries) {
-            // Add entry using LdapTemplate
-            ldapTemplate.create(entry)
-        }
     }
 }

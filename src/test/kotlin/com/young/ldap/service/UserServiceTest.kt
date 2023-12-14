@@ -18,7 +18,7 @@ class UserServiceTest {
 
     @Test
     fun testCreate(){
-        userService.createLdif()
+        userService.readLdif()
     }
 
 }

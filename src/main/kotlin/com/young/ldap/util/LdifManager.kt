@@ -308,7 +308,6 @@ class LdifManager : Parser, InitializingBean {
                     }
                 }
                 else -> {
-                    separatorPolicy.
                 }
             }
             line = reader!!.readLine()

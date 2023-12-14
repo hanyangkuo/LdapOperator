@@ -36,7 +36,7 @@ class UserService {
             val record = parser.record
 //            val dn: LdapName = record.name
             logger.info("record: $record")
-            logger.info("get record attribute: ${record?.get("objectclass")}")
+//            logger.info("get record attribute: ${record?.get("objectclass")}")
         }
 //        val attribute = DefaultAttributeValidationPolicy().parse(StringBuilder("changetype: add").toString())
 //        logger.attribute.id

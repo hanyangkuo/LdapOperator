@@ -13,25 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.young.ldap.util
+package com.young.ldap.util.ldif
 
+import com.young.ldap.util.ldif.support.LineIdentifier.*
+import com.young.ldap.util.ldif.support.SeparatorPolicy
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.InitializingBean
 import org.springframework.core.io.FileSystemResource
 import org.springframework.core.io.Resource
 import org.springframework.ldap.core.LdapAttributes
-import org.springframework.ldap.ldif.InvalidRecordFormatException
-import org.springframework.ldap.ldif.parser.Parser
+import org.springframework.ldap.ldif.parser.LdifParser
 import org.springframework.ldap.ldif.support.AttributeValidationPolicy
 import org.springframework.ldap.ldif.support.DefaultAttributeValidationPolicy
-import org.springframework.ldap.ldif.support.LineIdentifier
-import org.springframework.ldap.ldif.support.SeparatorPolicy
-
-import org.springframework.ldap.schema.DefaultSchemaSpecification
 import org.springframework.ldap.schema.Specification
-import org.springframework.ldap.support.LdapUtils
 import org.springframework.util.Assert
-import org.springframework.util.StringUtils
 import java.io.BufferedReader
 import java.io.File
 import java.io.IOException
@@ -93,7 +88,7 @@ import javax.naming.NamingException
  *
  * @author Keith Barlow
  */
-class LdifManager : Parser, InitializingBean {
+class LdifManager : InitializingBean {
     /**
      * The resource to parse.
      */
@@ -115,10 +110,6 @@ class LdifManager : Parser, InitializingBean {
      */
     private var attributePolicy: AttributeValidationPolicy = DefaultAttributeValidationPolicy()
 
-    /**
-     * The RecordSpecification for validating records produced.
-     */
-    private var specification: Specification<LdapAttributes> = DefaultSchemaSpecification()
 
     /**
      * This setting is used to control the case sensitivity of LdapAttribute objects
@@ -186,74 +177,65 @@ class LdifManager : Parser, InitializingBean {
         attributePolicy = avPolicy
     }
 
-    /**
-     * Policy object for enforcing rules to acceptable LDAP objects.
-     *
-     * This policy may be used to enforce schema restrictions.
-     * @param specification
-     */
-    fun setRecordSpecification(specification: Specification<LdapAttributes>) {
-        this.specification = specification
-    }
-
-    override fun setResource(resource: Resource) {
+    fun setResource(resource: Resource) {
         this.resource = resource
     }
 
-    override fun setCaseInsensitive(caseInsensitive: Boolean) {
+    fun setCaseInsensitive(caseInsensitive: Boolean) {
         this.caseInsensitive = caseInsensitive
     }
 
     @Throws(IOException::class)
-    override fun open() {
+    fun open() {
         Assert.notNull(resource, "Resource must be set.")
         reader = BufferedReader(InputStreamReader(resource!!.inputStream))
     }
 
     @Throws(IOException::class)
-    override fun isReady(): Boolean {
+    fun isReady(): Boolean {
         return reader!!.ready()
     }
 
     @Throws(IOException::class)
-    override fun close() {
+    fun close() {
         if (resource!!.isOpen) {
             reader!!.close()
         }
     }
 
     @Throws(IOException::class)
-    override fun reset() {
+    fun reset() {
         Assert.notNull(reader, "A reader has not been obtained.")
         reader!!.reset()
     }
 
     @Throws(IOException::class)
-    override fun hasMoreRecords(): Boolean {
+    fun hasMoreRecords(): Boolean {
         return reader!!.ready()
     }
 
     @Throws(IOException::class)
-    override fun getRecord(): LdapAttributes? {
+    fun getRecord(): LdapRecord? {
         Assert.notNull(reader, "A reader must be obtained: parser not open.")
         if (!reader!!.ready()) {
             LOG.debug("Reader not ready!")
             return null
         }
-        var record: LdapAttributes? = null
+        var record: LdapRecord? = null
         var builder: StringBuilder? = StringBuilder()
         var line = reader!!.readLine()
         while (true) {
-            val identifier = separatorPolicy.assess(line)
+            val identifier = separatorPolicy.assess(line!!)
             when (identifier) {
-                LineIdentifier.NewRecord -> {
+                NewRecord -> {
                     LOG.trace("Starting new record.")
                     // Start new record.
-                    record = LdapAttributes(caseInsensitive)
+//                    record = LdapAttributes(caseInsensitive)
+                    record = LdapRecord()
                     builder = StringBuilder(line)
                 }
 
-                LineIdentifier.Control -> {
+                Control -> {
                     LOG.trace("'control' encountered.")
 
                     // Log WARN and discard record.
@@ -262,86 +244,80 @@ class LdifManager : Parser, InitializingBean {
                     record = null
                 }
 
-                LineIdentifier.ChangeType -> {
-                    LOG.trace("'changetype' encountered.")
-
-                    // Log WARN and discard record.
-                    LOG.warn("LDIF change records have no implementation: record will be ignored.")
-
-                }
-
-                LineIdentifier.Attribute -> {
+                ChangeType -> {
+                    LOG.trace("Set record change type.")
                     // flush buffer.
-                    addAttributeToRecord(builder.toString(), record)
-                    LOG.trace("Starting new attribute.")
+                    record!!.addAttributeToRecord(builder.toString())
+                    val type = line.split(":")[1].trim()
+                    try{
+                        record.setChangeType(type)
+                    } catch (e: Exception){
+                        LOG.error("setChangeType error", e)
+                        builder = null
+                        record = null
+                    }
+                }
+                Dash -> {
+                    // flush buffer.
+                    record!!.addAttributeToRecord(builder.toString())
                     // Start new attribute.
-                    builder = StringBuilder(line)
+                    builder = StringBuilder("")
+                    LOG.trace("flush ModificationItem.")
+                    record.flushModificationItem()
+                }
+                Attribute -> {
+                    if (record!!.changerecord == ""){
+                        LOG.error("change type not found.")
+                        separatorPolicy.skip()
+                        builder = null
+                        record = null
+                    } else {
+                        // flush buffer.
+                        record.addAttributeToRecord(builder.toString())
+                        LOG.trace("Starting new attribute.")
+                        // Start new attribute.
+                        builder = StringBuilder(line)
+                    }
                 }
 
-                LineIdentifier.Continuation -> {
+                Continuation -> {
                     LOG.trace("...appending line to buffer.")
                     // Append line to buffer.
-                    builder!!.append(line!!.replaceFirst(" ".toRegex(), ""))
+                    builder!!.append(line.replaceFirst(" ".toRegex(), ""))
                 }
 
-                LineIdentifier.EndOfRecord -> {
+                EndOfRecord -> {
                     LOG.trace("...done parsing record. (EndOfRecord)")
+
                     // Validate record and return.
                     return if (record == null) {
+                        null
+                    } else if (!record.isValid){
+                        LOG.info("record is invalid")
                         null
                     } else {
                         try {
                             // flush buffer.
-                            addAttributeToRecord(builder.toString(), record)
-                            if (specification.isSatisfiedBy(record)) {
-                                LOG.debug("record parsed:\n$record")
-                                record
-                            } else {
-                                throw InvalidRecordFormatException(
-                                    "Record [dn: " + record.dn + "] does not conform to specification."
-                                )
+                            record.addAttributeToRecord(builder.toString())
+                            if (record.changerecord == "modify"){
+                                LOG.trace("flush ModificationItem.")
+                                record.flushModificationItem()
                             }
+                            record
                         } catch (ex: NamingException) {
                             LOG.error("Error adding attribute to record", ex)
                             null
                         }
                     }
                 }
-                else -> {
-                }
+
+                else -> {}
             }
             line = reader!!.readLine()
             if (line == null && record == null) {
                 // Never encountered a valid record.
                 return null
             }
-        }
-    }
-
-    private fun addAttributeToRecord(buffer: String, record: LdapAttributes?) {
-        try {
-            if (StringUtils.hasLength(buffer) && record != null) {
-                // Validate previous attribute and add to record.
-                val attribute = attributePolicy.parse(buffer)
-                if (attribute.id.equals("dn", ignoreCase = true)) {
-                    LOG.trace("...adding DN to record.")
-                    val dn: String
-                    dn = if (attribute.get() is ByteArray) {
-                        String((attribute.get() as ByteArray))
-                    } else {
-                        attribute.get() as String
-                    }
-                    record.setName(LdapUtils.newLdapName(dn))
-                } else {
-                    LOG.trace("...adding attribute to record.")
-                    val attr = record[attribute.id]
-                    attr?.add(attribute.get()) ?: record.put(attribute)
-                }
-            }
-        } catch (ex: NamingException) {
-            LOG.error("Error adding attribute to record", ex)
-        } catch (ex: NoSuchElementException) {
-            LOG.error("Error adding attribute to record", ex)
         }
     }
 

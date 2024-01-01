@@ -1,11 +1,11 @@
 package com.young.ldap.service
 
 import com.young.ldap.repository.UserRepository
-import com.young.ldap.util.LdifManager
+import com.young.ldap.util.ldif.LdapRecord
+import com.young.ldap.util.ldif.LdifManager
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.core.io.ClassPathResource
 import org.springframework.ldap.core.LdapTemplate
-import org.springframework.ldap.ldif.support.DefaultAttributeValidationPolicy
 import org.springframework.stereotype.Service
 import reactor.core.publisher.Mono
 import java.util.logging.Logger
@@ -30,16 +30,31 @@ class UserService {
     }
 
     fun readLdif() {
+
         val parser = LdifManager(ClassPathResource("user01.ldif"))
         parser.open()
         while (parser.hasMoreRecords()) {
-            val record = parser.record
-//            val dn: LdapName = record.name
-            logger.info("record: $record")
-//            logger.info("get record attribute: ${record?.get("objectclass")}")
+            val record = parser.getRecord()
+            if (record != null) {
+                when (record.changerecord) {
+                    LdapRecord.CHANGE_ADD -> {
+                        logger.info("Find record:\n" +
+                                "dn: ${record.getName()}\n" +
+                                "changerecord: ${record.changerecord}\n" +
+                                "attributes:\n" +
+                                "${record.attributes}\n" +
+                                "--------------------------------------------------------------")
+                    }
+                    LdapRecord.CHANGE_MODIFY -> {
+                        logger.info("Find record:\n" +
+                                "dn: ${record.getName()}\n" +
+                                "changerecord: ${record.changerecord}\n" +
+                                "modificationItems:\n" +
+                                "${record.modificationItems}\n" +
+                                "--------------------------------------------------------------")
+                    }
+                }
+            }
         }
-//        val attribute = DefaultAttributeValidationPolicy().parse(StringBuilder("changetype: add").toString())
-//        logger.attribute.id
-
     }
 }

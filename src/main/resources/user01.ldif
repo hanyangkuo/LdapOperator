@@ -26,12 +26,22 @@ sn: Jensen
 
 
 # modify a new entry
-# dn: cn=Fiona Jensen, ou=Marketing, dc=airius, dc=com
-#changetype: modify
-# add/replace/delete
-# replace: uid
-#uid: Jensen
+dn: cn=Fiona Jensen, ou=Marketing, dc=airius, dc=com
+changetype: delete
+add: cn
+cn: Fiona Jensen
 
-# Delete an existing entry
-# dn: cn=Robert Jensen, ou=Marketing, dc=airius, dc=com
-#changetype: delete
+dn: cn=Fiona Jensen, ou=Marketing, dc=airius, dc=com
+changetype: modify
+add: objectclass
+objectclass: top
+objectclass: person
+objectclass: organizationalPerson
+-
+add: cn
+cn: Fiona Jensen
+-
+replace: sn
+sn: Jensen
+-
+

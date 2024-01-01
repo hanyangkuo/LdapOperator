@@ -53,6 +53,12 @@ class UserService {
                                 "${record.modificationItems}\n" +
                                 "--------------------------------------------------------------")
                     }
+                    LdapRecord.CHANGE_DELETE -> {
+                        logger.info("Find record:\n" +
+                                "dn: ${record.getName()}\n" +
+                                "changerecord: ${record.changerecord}\n" +
+                                "--------------------------------------------------------------")
+                    }
                 }
             }
         }
